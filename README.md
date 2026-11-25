@@ -29,14 +29,9 @@ npm test
 
 ## GitHub Pages
 
-1. Publique este repositório no GitHub.
-2. Em **Settings → Pages**, escolha a branch `main` (ou `master`) e a pasta **/ (root)**.
-3. O arquivo [`.nojekyll`](.nojekyll) evita que o Jekyll ignore pastas com underscore ou arquivos estáticos.
-4. A URL fica `https://<usuario>.github.io/<repositorio>/`.
+Formalmente em:[ https://wlli173.github.io/PDA-01/](https://wlli173.github.io/PDA-01/)
 
-Todos os caminhos são relativos (`css/…`, `js/…`, `assets/…`), então o site sobe tanto em domínio raiz quanto em subpasta `/nome-do-repo/`.
-
-Depois envie o link do Pages no SIGAA.
+[Ou acessando por aqui](https://wlli173.github.io/PDA-01/)
 
 ## Controles
 
