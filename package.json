@@ -1,0 +1,13 @@
+{
+  "name": "vigia-7-pda",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vigia-7: jogo web cuja lógica é um autômato de pilha (Trabalho 02 de LFA).",
+  "scripts": {
+    "test": "node tests/pda.test.js && node tests/world.test.js",
+    "jff": "node scripts/gerar-jff.js",
+    "start": "node scripts/serve.js",
+    "pages": "node scripts/serve.js"
+  },
+  "license": "MIT"
+}

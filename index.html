@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d0b09" />
+    <meta
+      name="description"
+      content="Vigia-7: alivie a Usina 7. Colete lacres, abra comportas, sele anéis e gire a válvula na galeria."
+    />
+    <title>Vigia-7 · Usina 7</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%230d0b09'/%3E%3Crect x='1' y='2' width='6' height='5' fill='%238c9498'/%3E%3Crect x='2' y='4' width='1' height='1' fill='%23ffb703'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23ffb703'/%3E%3Crect x='3' y='0' width='1' height='2' fill='%236a5344'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <h1 class="logo">VIGIA<span>-7</span></h1>
+        <p class="sub">Trabalho 02 · LFA · PDA</p>
+      </div>
+      <div class="top-row">
+        <p class="pda-banner" role="note">
+          <span class="pda-tag">META</span>
+          Objetivo: na <strong>Galeria</strong>, girar a válvula (<code>n</code>) com a pilha
+          reduzida a <code>Z</code> — estado <code>q5</code>, cadeia aceita.
+        </p>
+        <button type="button" id="mute" class="btn mute" aria-pressed="false" title="Desativar sons">
+          Som: on
+        </button>
+      </div>
+    </header>
+
+    <main class="app">
+      <section class="play" aria-label="Jogo">
+        <div class="screen">
+          <div class="stage" id="stage">
+            <canvas
+              id="game"
+              width="320"
+              height="192"
+              role="img"
+              aria-label="Usina 7 em vista 3/4 e pixel art. Mova o Vigia com as teclas W, A, S e D."
+            ></canvas>
+            <div class="scan" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <p class="keys">
+          <span class="keycaps" aria-hidden="true">
+            <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+          </span>
+          mover <span class="sep">/</span> <kbd>R</kbd> reiniciar
+          <span class="sep">/</span> só tiles com letra geram símbolo
+        </p>
+
+        <section class="box tip-box">
+          <h2>Próximo passo <small id="dica-titulo">DOCA</small></h2>
+          <p id="dica" class="tip-body">
+            Colete o lacre quente (a) na doca. Sem ele a porta para a galeria permanece fechada.
+          </p>
+          <div class="moves">
+            <span class="moves-label">Ações possíveis</span>
+            <div id="gestos" class="moves-list" aria-label="Símbolos com transição definida"></div>
+          </div>
+        </section>
+
+        <section class="box story">
+          <h2>Objetivo</h2>
+          <p>
+            A Usina 7 está lacrada após um vazamento. Controle o <strong>Vigia-7</strong> até a
+            <strong>válvula de alívio</strong> na galeria e gire-a (<code>n</code>) com a pilha
+            apenas em <code>Z</code>.
+          </p>
+          <ul class="primer-list">
+            <li>
+              <strong>Para onde</strong> — Doca → Galeria. Opcional: Casa de máquinas, Passadiço e
+              Caldeira (anéis). A válvula fica na galeria.
+            </li>
+            <li>
+              <strong>O que coletar</strong> — lacres quentes (<code>a</code> → placa A) e frios
+              (<code>k</code> → placa K).
+            </li>
+            <li>
+              <strong>Para quê</strong> — A abre a comporta quente (<code>b</code>); K abre a fria
+              (<code>d</code>). Sem o lacre correspondente a passagem não abre.
+            </li>
+            <li>
+              <strong>Anéis</strong> — <code>e</code> entra (empilha R); <code>s</code> sela
+              (desempilha R). Lacres pegos dentro do anel ficam acima de R e precisam ser usados
+              antes de selar.
+            </li>
+            <li>
+              <strong>Vitória</strong> — em q1, topo Z, acionar <code>n</code> → q5 (ACEITA).
+              Transição inválida → qR (REJEITADA).
+            </li>
+          </ul>
+        </section>
+
+        <section class="box">
+          <h2>Legenda dos símbolos</h2>
+          <ul id="legenda" class="legend"></ul>
+        </section>
+      </section>
+
+      <aside class="side" aria-label="Painel do autômato">
+        <div class="readouts">
+          <div class="tile">
+            <span class="cap">Estado</span>
+            <strong id="estado" class="big">q0</strong>
+            <span id="estado-nome" class="small">Doca</span>
+          </div>
+          <div class="tile">
+            <span class="cap">Símbolo</span>
+            <strong id="simbolo" class="big sym">-</strong>
+            <span id="simbolo-desc" class="small">—</span>
+          </div>
+          <div class="tile wide">
+            <span class="cap">Veredito</span>
+            <strong id="veredito" class="verdict curso">EM CURSO</strong>
+            <span id="veredito-detalhe" class="small">ainda sem símbolos</span>
+          </div>
+        </div>
+        <p id="sr-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+        <section class="box delta-box">
+          <h2>Última transição</h2>
+          <p id="delta" class="delta-line">δ(?, ?, ?)</p>
+          <p id="delta-plain" class="delta-plain">Nenhum símbolo processado.</p>
+        </section>
+
+        <section class="box">
+          <h2>Pilha <small>topo em cima</small></h2>
+          <div id="pilha" class="stack"></div>
+          <p class="stack-help">Somente o topo é lido ou removido.</p>
+        </section>
+
+        <section class="box">
+          <h2>Roteiro</h2>
+          <div id="roteiro" class="tape"></div>
+          <ol id="registro" class="log" aria-label="Transições aplicadas"></ol>
+          <p id="fim" class="endhint" hidden>R ou Reiniciar para recomeçar.</p>
+        </section>
+
+        <section class="box">
+          <h2>Processar cadeia</h2>
+          <form id="roteiro-form" autocomplete="off">
+            <label for="roteiro-input">Sequência de símbolos</label>
+            <div class="row">
+              <input
+                id="roteiro-input"
+                type="text"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="a b n"
+                aria-describedby="roteiro-ajuda"
+              />
+              <button type="submit" class="btn primary">Processar</button>
+            </div>
+            <p id="roteiro-ajuda" class="help">
+              Alfabeto <code>a k b d e s n</code>. Espaços ignorados.
+            </p>
+            <div class="row speed">
+              <label for="velocidade">Velocidade</label>
+              <select id="velocidade">
+                <option value="800">Lenta</option>
+                <option value="520" selected>Normal</option>
+                <option value="220">Rápida</option>
+              </select>
+            </div>
+          </form>
+
+          <h3>Exemplos</h3>
+          <div id="exemplos" class="examples"></div>
+          <button type="button" id="reiniciar" class="btn block">Reiniciar</button>
+        </section>
+      </aside>
+    </main>
+
+    <section class="formal" aria-label="Definição do autômato">
+      <div class="box">
+        <div class="formal-head">
+          <h2>Diagrama de estados</h2>
+          <a class="btn link" href="automato.jff" download>Baixar automato.jff</a>
+        </div>
+        <p class="note">
+          Aresta do último passo em destaque. Laços de lacres (q1–q4) na tabela e no JFLAP.
+          Aceitação por estado final (Final State; Z permanece na pilha).
+        </p>
+
+        <svg
+          id="diagrama"
+          class="diagram"
+          viewBox="0 0 760 290"
+          role="img"
+          aria-label="Autômato de pilha do Vigia-7: estados q0 a q5 e qR"
+        >
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#b3a290" />
+            </marker>
+            <marker id="arrow-hot" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#ffb703" />
+            </marker>
+          </defs>
+
+          <line class="start" x1="14" y1="108" x2="46" y2="108" />
+          <text class="lbl" x="10" y="92">início</text>
+
+          <g class="edge" data-edge="q0>q1">
+            <path d="M104,108 H196" />
+            <text class="lbl" x="150" y="98" text-anchor="middle">a, Z / AZ</text>
+          </g>
+          <g class="edge" data-edge="q1>q2">
+            <path d="M264,108 H356" />
+            <text class="lbl" x="310" y="98" text-anchor="middle">e, X / RX</text>
+          </g>
+          <g class="edge" data-edge="q2>q3">
+            <path d="M424,108 H516" />
+            <text class="lbl" x="470" y="98" text-anchor="middle">e, X / RX</text>
+          </g>
+          <g class="edge" data-edge="q3>q4">
+            <path d="M584,108 H656" />
+            <text class="lbl" x="620" y="98" text-anchor="middle">e, X / RX</text>
+          </g>
+
+          <g class="edge" data-edge="q4>q3">
+            <path d="M706,142 C690,196 600,196 566,142" />
+            <text class="lbl" x="636" y="196" text-anchor="middle">s, R / ε</text>
+          </g>
+          <g class="edge" data-edge="q3>q2">
+            <path d="M536,142 C520,196 440,196 406,142" />
+            <text class="lbl" x="472" y="196" text-anchor="middle">s, R / ε</text>
+          </g>
+          <g class="edge" data-edge="q2>q1">
+            <path d="M376,142 C360,196 280,196 246,142" />
+            <text class="lbl" x="312" y="196" text-anchor="middle">s, R / ε</text>
+          </g>
+          <g class="edge" data-edge="q1>q5">
+            <path d="M230,142 V198" />
+            <text class="lbl" x="222" y="176" text-anchor="end">n, Z / Z</text>
+          </g>
+
+          <g class="node" data-state="q0">
+            <circle class="halo" cx="76" cy="108" r="38" />
+            <circle cx="76" cy="108" r="30" />
+            <text class="id" x="76" y="108" text-anchor="middle">q0</text>
+            <text class="nm" x="76" y="124" text-anchor="middle">Doca</text>
+          </g>
+          <g class="node" data-state="q1">
+            <circle class="halo" cx="230" cy="108" r="38" />
+            <circle cx="230" cy="108" r="30" />
+            <text class="id" x="230" y="108" text-anchor="middle">q1</text>
+            <text class="nm" x="230" y="124" text-anchor="middle">Galeria</text>
+          </g>
+          <g class="node" data-state="q2">
+            <circle class="halo" cx="390" cy="108" r="38" />
+            <circle cx="390" cy="108" r="30" />
+            <text class="id" x="390" y="108" text-anchor="middle">q2</text>
+            <text class="nm" x="390" y="124" text-anchor="middle">Casa</text>
+          </g>
+          <g class="node" data-state="q3">
+            <circle class="halo" cx="550" cy="108" r="38" />
+            <circle cx="550" cy="108" r="30" />
+            <text class="id" x="550" y="108" text-anchor="middle">q3</text>
+            <text class="nm" x="550" y="124" text-anchor="middle">Passadiço</text>
+          </g>
+          <g class="node" data-state="q4">
+            <circle class="halo" cx="690" cy="108" r="38" />
+            <circle cx="690" cy="108" r="30" />
+            <text class="id" x="690" y="108" text-anchor="middle">q4</text>
+            <text class="nm" x="690" y="124" text-anchor="middle">Caldeira</text>
+          </g>
+          <g class="node final" data-state="q5">
+            <circle class="halo" cx="230" cy="236" r="40" />
+            <circle cx="230" cy="236" r="30" />
+            <circle class="inner" cx="230" cy="236" r="24" />
+            <text class="id" x="230" y="236" text-anchor="middle">q5</text>
+            <text class="nm" x="230" y="252" text-anchor="middle">Núcleo</text>
+          </g>
+          <g class="node reject" data-state="qR">
+            <circle class="halo" cx="76" cy="236" r="38" />
+            <circle cx="76" cy="236" r="30" />
+            <text class="id" x="76" y="236" text-anchor="middle">qR</text>
+            <text class="nm" x="76" y="252" text-anchor="middle">Pane</text>
+          </g>
+
+          <text class="lbl dim" x="340" y="238">δ indefinida → qR</text>
+          <text class="lbl dim" x="340" y="258">cadeia rejeitada</text>
+        </svg>
+
+        <h3>Laços em q1–q4 <small>X ∈ Γ</small></h3>
+        <div class="loops">
+          <div><code>a, X / AX</code><span>lacre quente</span></div>
+          <div><code>k, X / KX</code><span>lacre frio</span></div>
+          <div><code>b, A / ε</code><span>comporta quente</span></div>
+          <div><code>d, K / ε</code><span>comporta fria</span></div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h2>Regras de transição</h2>
+        <pre class="rules">M = (Q, Σ, Γ, δ, q0, Z, {q5})
+Q = {q0, q1, q2, q3, q4, q5, qR}
+Σ = {a, k, b, d, e, s, n}
+Γ = {Z, A, K, R}          topo à esquerda, ε = só desempilha
+
+δ(q0, a, Z) = (q1, AZ)
+δ(q, a, X)  = (q, AX)     q ∈ {q1, q2, q3, q4}, X ∈ Γ
+δ(q, k, X)  = (q, KX)     q ∈ {q1, q2, q3, q4}, X ∈ Γ
+δ(q, b, A)  = (q, ε)      q ∈ {q1, q2, q3, q4}
+δ(q, d, K)  = (q, ε)      q ∈ {q1, q2, q3, q4}
+δ(q1, e, X) = (q2, RX)    X ∈ Γ
+δ(q2, e, X) = (q3, RX)    X ∈ Γ
+δ(q3, e, X) = (q4, RX)    X ∈ Γ
+δ(q4, s, R) = (q3, ε)
+δ(q3, s, R) = (q2, ε)
+δ(q2, s, R) = (q1, ε)
+δ(q1, n, Z) = (q5, Z)
+
+Qualquer outra combinação é indefinida e leva a qR.
+Aceita somente em q5, com a entrada esgotada.</pre>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p>
+        Fontes <a href="assets/fonts/OFL-PressStart2P.txt">Press Start 2P</a> (CodeMan38) e
+        <a href="assets/fonts/OFL-VT323.txt">VT323</a> (Peter Hull), licença SIL OFL. Toda a arte do
+        jogo é gerada por código.
+      </p>
+    </footer>
+
+    <script src="js/pda.js" defer></script>
+    <script src="js/world.js" defer></script>
+    <script src="js/art.js" defer></script>
+    <script src="js/sfx.js" defer></script>
+    <script src="js/game.js" defer></script>
+    <script src="js/ui.js" defer></script>
+  </body>
+</html>
