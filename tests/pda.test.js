@@ -36,19 +36,23 @@ test("quatro exemplos da interface batem com o esperado", () => {
   }
 });
 
-test("cadeias aceitas", () => {
-  accepts("abn");
-  accepts("a b n");
-  accepts("akdbn");
+test("cadeias aceitas exigem inspeção (qi) antes de n", () => {
+  accepts("abesn");
+  accepts("a b e s n");
+  accepts("akdbesn");
   accepts("abeekdsabsn");
   accepts("abeeesssn");
-  accepts("aaabbbn");
+  accepts("aaabbbesn");
   rejects("abeeessn", "undefined", 7);
-  accepts("a" + "a".repeat(40) + "b".repeat(41) + "n");
+  accepts("a" + "a".repeat(40) + "b".repeat(41) + "esn");
+});
+
+test("válvula sem inspeção rejeita (abn)", () => {
+  rejects("abn", "undefined", 2);
 });
 
 test("LIFO: o tipo do topo importa", () => {
-  accepts("akdbn");
+  accepts("akdbesn");
   rejects("akbn", "undefined", 2);
   rejects("akb", "undefined", 2);
 });
@@ -59,6 +63,7 @@ test("anel só sela com R no topo", () => {
 });
 
 test("entrada esgotada fora de q5 rejeita", () => {
+  rejects("abes", "not-final");
   rejects("ab", "not-final");
   rejects("", "not-final");
   rejects("abee", "not-final");
@@ -72,12 +77,12 @@ test("profundidade máxima de três anéis", () => {
 });
 
 test("símbolo fora do alfabeto", () => {
-  rejects("abnX", "invalid-symbol", 3);
+  rejects("abesnX", "invalid-symbol", 5);
   rejects("x", "invalid-symbol", 0);
 });
 
 test("estado final q5 não aceita mais símbolos", () => {
-  rejects("abnn", "undefined");
+  rejects("abesnn", "undefined");
 });
 
 test("quem rejeita para no primeiro símbolo inválido", () => {
@@ -85,10 +90,10 @@ test("quem rejeita para no primeiro símbolo inválido", () => {
   assert.equal(steps.length, 1);
 });
 
-test("determinismo: 57 regras sem chave duplicada", () => {
+test("determinismo: regras sem chave duplicada", () => {
   const rules = PDA.definedTransitions();
   const keys = new Set(rules.map((r) => r.from + "|" + r.read + "|" + r.pop));
-  assert.equal(rules.length, 57);
+  assert.equal(rules.length, 71);
   assert.equal(keys.size, rules.length);
 });
 
@@ -99,7 +104,7 @@ test("o fundo Z nunca é desempilhado sem repor", () => {
   }
 });
 
-test("trilha do exemplo aninhado", () => {
+test("trilha do exemplo aninhado chega em qi antes de q5", () => {
   const { steps } = PDA.runString("abeekdsabsn");
   const trail = steps.map((s) => s.to + ":" + s.config.stack.join(""));
   assert.deepEqual(trail, [
@@ -112,9 +117,15 @@ test("trilha do exemplo aninhado", () => {
     "q2:ZR",
     "q2:ZRA",
     "q2:ZR",
-    "q1:Z",
+    "qi:Z",
     "q5:Z",
   ]);
+});
+
+test("selar o anel 1 leva a qi, não a q1", () => {
+  const { config } = PDA.runString("abes");
+  assert.equal(config.state, "qi");
+  assert.deepEqual(config.stack, ["Z"]);
 });
 
 test("formatDelta usa a notação formal", () => {
@@ -122,7 +133,7 @@ test("formatDelta usa a notação formal", () => {
   assert.equal(PDA.formatDelta(steps[0]), "δ(q0, a, Z) = (q1, AZ)");
   assert.equal(PDA.formatDelta(steps[1]), "δ(q1, b, A) = (q1, ε)");
   const bad = PDA.runString("ak" + "b").steps[2];
-  assert.equal(PDA.formatDelta(bad), "δ(q1, b, K) = ∅  →  qR");
+  assert.equal(PDA.formatDelta(bad), "δ(q1, b, K) = ∅  · erro (sem transição)");
 });
 
 test("legalMoves na doca só permite a", () => {
@@ -142,13 +153,52 @@ test("legalMoves com topo K oferece d e não b como único desempilha", () => {
   assert.equal(symbols.includes("b"), false);
 });
 
+test("em q1 com topo Z a válvula n não é legal", () => {
+  let cfg = PDA.createConfig();
+  cfg = PDA.applyStep(cfg, "a").config;
+  cfg = PDA.applyStep(cfg, "b").config;
+  assert.equal(cfg.state, "q1");
+  assert.deepEqual(cfg.stack, ["Z"]);
+  const symbols = PDA.legalMoves(cfg).map((m) => m.symbol);
+  assert.equal(symbols.includes("n"), false);
+  assert.ok(symbols.includes("e"));
+});
+
+test("em qi com topo Z a válvula n é legal", () => {
+  let cfg = PDA.runString("abes").config;
+  // not-final ainda, mas estado qi
+  cfg = Object.assign({}, cfg, { halted: false, rejected: false, accepted: false, reason: null });
+  // runString already finished — rebuild:
+  cfg = PDA.createConfig();
+  for (const ch of "abes") cfg = PDA.applyStep(cfg, ch).config;
+  assert.equal(cfg.state, "qi");
+  const symbols = PDA.legalMoves(cfg).map((m) => m.symbol);
+  assert.ok(symbols.includes("n"));
+});
+
 test("coachTip aponta d antes de b com topo K", () => {
   let cfg = PDA.createConfig();
   cfg = PDA.applyStep(cfg, "a").config;
   cfg = PDA.applyStep(cfg, "k").config;
   const tip = PDA.coachTip(cfg, null);
   assert.match(tip.body, /d antes de b|comporta fria/i);
-  assert.match(tip.title, /TOPO K/i);
+  assert.match(tip.title, /TOPO K|GALERIA/i);
+});
+
+test("endingInfo distingue válvula travada de comporta errada", () => {
+  const locked = PDA.runString("abn");
+  const end = PDA.endingInfo(locked.config, locked.steps[locked.steps.length - 1]);
+  assert.equal(end.kind, "reject");
+  assert.match(end.title, /VÁLVULA TRAVADA/i);
+
+  const wrong = PDA.runString("akb");
+  const end2 = PDA.endingInfo(wrong.config, wrong.steps[wrong.steps.length - 1]);
+  assert.match(end2.title, /COMPORTA ERRADA/i);
+
+  const ok = PDA.runString("abesn");
+  const end3 = PDA.endingInfo(ok.config, ok.steps[ok.steps.length - 1]);
+  assert.equal(end3.kind, "accept");
+  assert.match(end3.title, /CALDEIRA ALIVIADA/i);
 });
 
 console.log("\n" + passed + " testes passaram");

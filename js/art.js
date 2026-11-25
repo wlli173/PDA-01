@@ -295,7 +295,7 @@
     });
   }
 
-  /* ---------- eventos (símbolos do roteiro) ---------- */
+  /* ---------- eventos (ações do roteiro) ---------- */
 
   function circle(g, cx, cy, r0, r1, color) {
     for (let dy = -r1; dy <= r1; dy += 1) {
@@ -306,75 +306,90 @@
     }
   }
 
-  function seal(g, x, y, base, hi, dark) {
-    const shape = function (ox, oy, w, h, c) {
-      rect(g, x + ox + 1, y + oy, w - 2, h, c);
-      rect(g, x + ox, y + oy + 1, w, h - 2, c);
-    };
-    rect(g, x + 4, y + 13, 8, 1, "rgba(0,0,0,0.45)");
-    shape(2, 2, 12, 12, INK);
-    shape(3, 3, 10, 10, base);
-    rect(g, x + 5, y + 5, 6, 6, dark);
-    rect(g, x + 6, y + 6, 4, 4, INK);
-    rect(g, x + 7, y + 7, 2, 2, base);
-    rect(g, x + 4, y + 4, 1, 3, hi);
-    rect(g, x + 5, y + 3, 3, 1, hi);
-    rect(g, x + 11, y + 11, 1, 1, dark);
+  /** Cartucho de lacre + garra: ação de PEGAR (empilha A/K). */
+  function cartridgePickup(g, x, y, base, hi, dark, hot) {
+    rect(g, x + 4, y + 14, 8, 1, "rgba(0,0,0,0.45)");
+    rect(g, x + 5, y + 1, 2, 3, "#6a7276");
+    rect(g, x + 9, y + 1, 2, 3, "#6a7276");
+    rect(g, x + 4, y + 3, 3, 2, "#8c9498");
+    rect(g, x + 9, y + 3, 3, 2, "#8c9498");
+    rect(g, x + 7, y + 0, 2, 2, "#4a5156");
+    rect(g, x + 4, y + 5, 8, 9, INK);
+    rect(g, x + 5, y + 6, 6, 7, base);
+    rect(g, x + 5, y + 6, 6, 1, hi);
+    rect(g, x + 5, y + 11, 6, 2, dark);
+    rect(g, x + 6, y + 8, 4, 2, INK);
+    rect(g, x + 7, y + 8, 2, 2, hot ? "#ffd2a8" : "#d8f7ff");
+    rect(g, x + 6, y + 13, 1, 1, hi);
+    rect(g, x + 9, y + 13, 1, 1, hi);
   }
 
-  function hatchGate(g, x, y, base, dark, on) {
+  /** Comporta trancada com soquete A/K: ação de ABRIR (gasta o topo). */
+  function lockedHatch(g, x, y, base, dark, on, needA) {
     rect(g, x + 1, y + 1, 14, 14, INK);
-    rect(g, x + 2, y + 2, 12, 12, "#2c2a2a");
-    rect(g, x + 3, y + 3, 5, 10, "#3d3a38");
-    rect(g, x + 8, y + 3, 5, 10, "#3d3a38");
-    rect(g, x + 7, y + 3, 2, 10, INK);
-    rect(g, x + 3, y + 3, 5, 1, "#59544f");
-    rect(g, x + 8, y + 3, 5, 1, "#59544f");
-    rect(g, x + 3, y + 12, 10, 1, "#1a1816");
-    rect(g, x + 4, y + 5, 3, 1, dark);
-    rect(g, x + 9, y + 5, 3, 1, dark);
+    rect(g, x + 2, y + 2, 12, 12, "#2a2624");
+    rect(g, x + 3, y + 3, 4, 9, "#3d3a38");
+    rect(g, x + 9, y + 3, 4, 9, "#3d3a38");
+    rect(g, x + 7, y + 3, 2, 9, INK);
+    rect(g, x + 3, y + 3, 4, 1, "#59544f");
+    rect(g, x + 9, y + 3, 4, 1, "#59544f");
+    rect(g, x + 5, y + 6, 6, 5, INK);
+    rect(g, x + 6, y + 7, 4, 3, dark);
+    rect(g, x + 7, y + 8, 2, 1, on ? base : "#1a1816");
     const lamp = on ? base : dark;
     rect(g, x + 3, y + 2, 2, 2, lamp);
     rect(g, x + 11, y + 2, 2, 2, lamp);
-    for (let i = 0; i < 3; i += 1) {
-      rect(g, x + 4 + i * 4, y + 13, 2, 1, dark);
-    }
+    rect(g, x + 6, y + 12, 4, 2, needA ? "#c47a3a" : "#3aa9c8");
+    rect(g, x + 7, y + 12, 2, 1, needA ? "#ffb08a" : "#9fe6f7");
   }
 
-  function ringHole(g, x, y) {
+  /** Poço com seta para baixo: ação de DESCER (empilha R). */
+  function descentShaft(g, x, y, blink) {
     rect(g, x + 1, y + 1, 14, 14, INK);
-    rect(g, x + 2, y + 2, 12, 12, "#8f8a7c");
+    rect(g, x + 2, y + 2, 12, 12, "#6a6254");
     rect(g, x + 3, y + 3, 10, 10, "#050303");
-    rect(g, x + 5, y + 3, 1, 10, "#7a6a4c");
-    rect(g, x + 10, y + 3, 1, 10, "#7a6a4c");
-    for (let i = 0; i < 4; i += 1) rect(g, x + 5, y + 4 + i * 3, 6, 1, "#a8956a");
-    rect(g, x + 2, y + 2, 12, 1, "#c9c0ac");
-    rect(g, x + 7, y + 14, 2, 1, "#e6d3b0");
+    rect(g, x + 5, y + 3, 1, 10, "#8a7a5c");
+    rect(g, x + 10, y + 3, 1, 10, "#8a7a5c");
+    for (let i = 0; i < 4; i += 1) rect(g, x + 5, y + 4 + i * 2, 6, 1, "#a8956a");
+    const tip = blink ? "#fff1c9" : "#e6d3b0";
+    rect(g, x + 7, y + 5, 2, 4, tip);
+    rect(g, x + 6, y + 8, 4, 1, tip);
+    rect(g, x + 5, y + 9, 6, 1, tip);
+    rect(g, x + 6, y + 10, 4, 1, tip);
+    rect(g, x + 7, y + 11, 2, 1, tip);
   }
 
-  function sealLid(g, x, y, on) {
+  /** Prensa de selagem + seta subir: ação de SELAR (desempilha R). */
+  function sealPress(g, x, y, on) {
     rect(g, x + 1, y + 1, 14, 14, INK);
-    rect(g, x + 2, y + 2, 12, 12, "#2c6a4a");
-    rect(g, x + 3, y + 3, 10, 10, "#3a8a62");
-    rect(g, x + 3, y + 3, 10, 1, "#6fcf9a");
-    rect(g, x + 7, y + 4, 2, 8, "#153826");
-    rect(g, x + 4, y + 7, 8, 2, "#153826");
-    rect(g, x + 6, y + 6, 4, 4, "#6fcf9a");
-    rect(g, x + 7, y + 7, 2, 2, on ? "#d8ffe9" : "#2c6a4a");
+    rect(g, x + 2, y + 2, 12, 12, "#1e3a2c");
+    rect(g, x + 4, y + 3, 8, 3, on ? "#6fcf9a" : "#3a8a62");
+    rect(g, x + 5, y + 4, 6, 1, "#d8ffe9");
+    rect(g, x + 6, y + 6, 4, 2, "#153826");
+    rect(g, x + 3, y + 8, 10, 3, "#2c6a4a");
+    rect(g, x + 4, y + 9, 8, 1, "#6fcf9a");
+    const tip = on ? "#d8ffe9" : "#6fcf9a";
+    rect(g, x + 7, y + 12, 2, 1, tip);
+    rect(g, x + 6, y + 11, 4, 1, tip);
+    rect(g, x + 5, y + 10, 6, 1, tip);
   }
 
-  function valve(g, x, y, on) {
-    rect(g, x, y + 6, T, 4, "#4e5856");
-    rect(g, x, y + 6, T, 1, "#8a9391");
-    rect(g, x, y + 9, T, 1, "#262c2a");
-    rect(g, x, y + 5, 2, 6, "#343b39");
-    rect(g, x + 14, y + 5, 2, 6, "#343b39");
-    circle(g, x + 8, y + 5, 3, 6, INK);
-    circle(g, x + 8, y + 5, 4, 5, "#c79a2f");
-    rect(g, x + 7, y - 1, 2, 12, "#f2c75c");
-    rect(g, x + 2, y + 4, 12, 2, "#f2c75c");
-    rect(g, x + 6, y + 3, 4, 4, "#8a6a1a");
-    rect(g, x + 7, y + 4, 2, 2, on ? "#fff1c9" : "#f2c75c");
+  /** Volante + manômetro: ação de GIRAR a válvula. */
+  function reliefValve(g, x, y, on) {
+    rect(g, x, y + 7, T, 4, "#4e5856");
+    rect(g, x, y + 7, T, 1, "#8a9391");
+    rect(g, x, y + 10, T, 1, "#262c2a");
+    rect(g, x, y + 6, 2, 6, "#343b39");
+    rect(g, x + 14, y + 6, 2, 6, "#343b39");
+    rect(g, x + 1, y + 1, 5, 5, INK);
+    rect(g, x + 2, y + 2, 3, 3, "#1a2220");
+    rect(g, x + 3, y + 3, 1, 1, on ? "#6fcf9a" : "#c2381f");
+    circle(g, x + 9, y + 6, 3, 6, INK);
+    circle(g, x + 9, y + 6, 4, 5, "#c79a2f");
+    rect(g, x + 8, y + 1, 2, 11, "#f2c75c");
+    rect(g, x + 4, y + 5, 10, 2, "#f2c75c");
+    rect(g, x + 7, y + 4, 4, 4, "#8a6a1a");
+    rect(g, x + 8, y + 5, 2, 2, on ? "#fff1c9" : "#f2c75c");
   }
 
   function pad(g, x, y, color, on) {
@@ -396,7 +411,7 @@
     return color;
   }
 
-  /** Desenha o objeto do símbolo na célula cujo canto superior esquerdo é (x, y). */
+  /** Desenha a ação do símbolo na célula cujo canto superior esquerdo é (x, y). */
   function drawEvent(g, symbol, x, y, now, seed) {
     const on = Math.floor(now / 380 + seed) % 2 === 0;
     const col = COLOR[symbol];
@@ -404,33 +419,56 @@
     const bob = Math.round(Math.sin(now / 300 + seed));
     if (symbol === "a" || symbol === "k") {
       pad(g, x, y, col, on);
-      seal(g, x, y - 1 + bob, col, symbol === "a" ? "#ffd2a8" : "#d8f7ff", dark);
+      cartridgePickup(
+        g,
+        x,
+        y - 1 + bob,
+        col,
+        symbol === "a" ? "#ffd2a8" : "#d8f7ff",
+        dark,
+        symbol === "a",
+      );
     } else if (symbol === "b" || symbol === "d") {
       pad(g, x, y, col, on);
-      hatchGate(g, x, y, col, dark, on);
+      lockedHatch(g, x, y, col, dark, on, symbol === "b");
     } else if (symbol === "e") {
-      ringHole(g, x, y);
+      descentShaft(g, x, y, on);
     } else if (symbol === "s") {
-      sealLid(g, x, y, on);
+      sealPress(g, x, y, on);
     } else if (symbol === "n") {
       pad(g, x, y, col, on);
-      valve(g, x, y - 1, on);
+      reliefValve(g, x, y - 1, on);
     }
   }
 
-  /** Etiqueta flutuante com a letra do símbolo (ajuda a ler o roteiro no mapa). */
-  function drawTag(g, symbol, x, y) {
+  /**
+   * Etiqueta: letra formal + verbo da ação (PEGAR / ABRIR / …).
+   * actionMap opcional; se omitido, só mostra a letra.
+   */
+  function drawTag(g, symbol, x, y, actionMap) {
     const col = COLOR[symbol];
-    rect(g, x + 2, y - 11, 12, 11, INK);
-    rect(g, x + 3, y - 10, 10, 9, COLOR_DARK[symbol]);
-    rect(g, x + 3, y - 10, 10, 1, col);
+    const action = actionMap && actionMap[symbol] ? actionMap[symbol] : null;
+    const tagH = action ? 17 : 11;
+    const tagW = action ? 28 : 12;
+    const left = x + Math.floor((T - tagW) / 2);
+    rect(g, left, y - tagH, tagW, tagH, INK);
+    rect(g, left + 1, y - tagH + 1, tagW - 2, tagH - 2, COLOR_DARK[symbol]);
+    rect(g, left + 1, y - tagH + 1, tagW - 2, 1, col);
     g.font = "8px " + FONT;
     g.textBaseline = "top";
     g.textAlign = "center";
+    const cx = left + Math.floor(tagW / 2);
     g.fillStyle = INK;
-    g.fillText(symbol, x + 9, y - 8);
+    g.fillText(symbol, cx + 1, y - tagH + 3);
     g.fillStyle = "#fff6e6";
-    g.fillText(symbol, x + 8, y - 9);
+    g.fillText(symbol, cx, y - tagH + 2);
+    if (action) {
+      g.font = "6px " + FONT;
+      g.fillStyle = INK;
+      g.fillText(action, cx + 1, y - 7);
+      g.fillStyle = col;
+      g.fillText(action, cx, y - 8);
+    }
   }
 
   /* ---------- adereços ---------- */

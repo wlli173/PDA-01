@@ -1,6 +1,9 @@
 /**
  * Mapa da Usina 7 (dados puros, sem DOM).
  * Script clássico: window.VigiaWorld no navegador, module.exports no Node.
+ *
+ * Layout pensado em ações: cartuchos ao lado das comportas do mesmo tipo,
+ * poço de descida e prensa de selagem em destaque, válvula na galeria.
  */
 (function (root) {
   "use strict";
@@ -24,10 +27,11 @@
   const FOCUS = {
     q0: { x: 3, y: 4 },
     q1: { x: 14, y: 5 },
+    qi: { x: 18, y: 10 },
     q2: { x: 14, y: 17 },
     q3: { x: 14, y: 27 },
     q4: { x: 14, y: 37 },
-    q5: { x: 18, y: 9 },
+    q5: { x: 18, y: 10 },
   };
 
   function createWorld() {
@@ -50,41 +54,40 @@
       events.set(x + "," + y, { x, y, symbol, landing: landing || null });
     };
 
-    // doca
+    // doca — único cartucho quente que abre a porta
     add(6, 4, "a");
 
-    // galeria (q1)
+    // galeria (q1 / qi): pares ação (cartucho ↔ comporta), poço e válvula
+    // menos “pegar qualquer coisa”: um de cada tipo, colados à comporta correspondente
     add(12, 3, "a");
-    add(15, 3, "a");
+    add(14, 3, "b");
     add(12, 6, "k");
-    add(15, 6, "k");
-    add(18, 3, "b");
-    add(16, 8, "d");
+    add(14, 6, "d");
     add(13, 10, "e", { x: 13, y: 16 });
     add(18, 10, "n");
 
-    // anel 1 (q2)
-    add(12, 18, "a");
-    add(15, 18, "k");
-    add(18, 18, "b");
-    add(18, 20, "d");
-    add(13, 20, "e", { x: 13, y: 26 });
-    add(16, 20, "s", { x: 16, y: 10 });
+    // anel 1 (q2) — pares quente/frio + descer/selar
+    add(12, 17, "a");
+    add(14, 17, "b");
+    add(12, 20, "k");
+    add(14, 20, "d");
+    add(16, 17, "e", { x: 13, y: 26 });
+    add(18, 20, "s", { x: 16, y: 10 });
 
     // anel 2 (q3)
     add(12, 27, "a");
-    add(15, 27, "k");
-    add(18, 27, "b");
-    add(18, 29, "d");
-    add(13, 29, "e", { x: 13, y: 36 });
-    add(16, 29, "s", { x: 16, y: 19 });
+    add(14, 27, "b");
+    add(12, 29, "k");
+    add(14, 29, "d");
+    add(16, 27, "e", { x: 13, y: 36 });
+    add(18, 29, "s", { x: 16, y: 19 });
 
-    // anel 3 (q4)
+    // anel 3 (q4) — fundo: só pares + selar (sem e)
     add(12, 36, "a");
-    add(15, 36, "k");
-    add(18, 36, "b");
-    add(18, 38, "d");
-    add(16, 38, "s", { x: 16, y: 28 });
+    add(14, 36, "b");
+    add(12, 38, "k");
+    add(14, 38, "d");
+    add(18, 38, "s", { x: 16, y: 28 });
 
     // adereços sólidos (bloqueiam o Vigia); lamp emite luz
     const decor = [

@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0d0b09" />
     <meta
       name="description"
-      content="Vigia-7: alivie a Usina 7. Colete lacres, abra comportas, sele anéis e gire a válvula na galeria."
+      content="Vigia-7: inspecione a Usina 7. Pegue cartuchos, abra comportas, sele anéis e só então gire a válvula."
     />
     <title>Vigia-7 · Usina 7</title>
     <link
@@ -24,8 +24,9 @@
       <div class="top-row">
         <p class="pda-banner" role="note">
           <span class="pda-tag">META</span>
-          Objetivo: na <strong>Galeria</strong>, girar a válvula (<code>n</code>) com a pilha
-          reduzida a <code>Z</code> — estado <code>q5</code>, cadeia aceita.
+          Inspecione ao menos um anel (<code>e</code>/<code>s</code>), volte a
+          <strong>qi</strong> com pilha em <code>Z</code> e gire a válvula (<code>n</code>) →
+          <code>q5</code>.
         </p>
         <button type="button" id="mute" class="btn mute" aria-pressed="false" title="Desativar sons">
           Som: on
@@ -59,7 +60,7 @@
         <section class="box tip-box">
           <h2>Próximo passo <small id="dica-titulo">DOCA</small></h2>
           <p id="dica" class="tip-body">
-            Colete o lacre quente (a) na doca. Sem ele a porta para a galeria permanece fechada.
+            Pegue o cartucho quente (a) na doca. Sem ele a porta para a galeria permanece fechada.
           </p>
           <div class="moves">
             <span class="moves-label">Ações possíveis</span>
@@ -67,34 +68,34 @@
           </div>
         </section>
 
-        <section class="box story">
+                <section class="box story">
           <h2>Objetivo</h2>
           <p>
-            A Usina 7 está lacrada após um vazamento. Controle o <strong>Vigia-7</strong> até a
-            <strong>válvula de alívio</strong> na galeria e gire-a (<code>n</code>) com a pilha
-            apenas em <code>Z</code>.
+            A Usina 7 está lacrada. O <strong>Vigia-7</strong> precisa
+            <strong>inspecionar um anel</strong>, voltar com a pilha em <code>Z</code> e só então
+            <strong>girar a válvula</strong> (<code>n</code>) — sem inspeção ela permanece travada.
           </p>
           <ul class="primer-list">
             <li>
-              <strong>Para onde</strong> — Doca → Galeria. Opcional: Casa de máquinas, Passadiço e
-              Caldeira (anéis). A válvula fica na galeria.
+              <strong>Ações no mapa</strong> — cada tile é uma ação: PEGAR cartucho, ABRIR comporta,
+              DESCER ao anel, SELAR e subir, GIRAR a válvula.
             </li>
             <li>
-              <strong>O que coletar</strong> — lacres quentes (<code>a</code> → placa A) e frios
-              (<code>k</code> → placa K).
+              <strong>Cartuchos</strong> — quente (<code>a</code> → A) e frio (<code>k</code> → K).
+              Empilham no magazine; a garra só lê o topo.
             </li>
             <li>
-              <strong>Para quê</strong> — A abre a comporta quente (<code>b</code>); K abre a fria
-              (<code>d</code>). Sem o lacre correspondente a passagem não abre.
+              <strong>Comportas</strong> — quente (<code>b</code>) gasta A; fria (<code>d</code>)
+              gasta K. Tipo errado no topo = pane.
             </li>
             <li>
-              <strong>Anéis</strong> — <code>e</code> entra (empilha R); <code>s</code> sela
-              (desempilha R). Lacres pegos dentro do anel ficam acima de R e precisam ser usados
-              antes de selar.
+              <strong>Inspeção</strong> — <code>e</code> desce (empilha R); <code>s</code> sela
+              (desempilha R). Lacres acima de R bloqueiam o selo. O primeiro retorno do anel 1 leva a
+              <code>qi</code> (válvula liberada).
             </li>
             <li>
-              <strong>Vitória</strong> — em q1, topo Z, acionar <code>n</code> → q5 (ACEITA).
-              Transição inválida → qR (REJEITADA).
+              <strong>Vitória</strong> — em <code>qi</code>, topo Z, girar <code>n</code> →
+              <code>q5</code> (CALDEIRA ALIVIADA). Entrada sem transição prevista = erro (rejeita).
             </li>
           </ul>
         </section>
@@ -154,7 +155,7 @@
                 type="text"
                 autocapitalize="off"
                 spellcheck="false"
-                placeholder="a b n"
+                placeholder="a b e s n"
                 aria-describedby="roteiro-ajuda"
               />
               <button type="submit" class="btn primary">Processar</button>
@@ -183,19 +184,33 @@
       <div class="box">
         <div class="formal-head">
           <h2>Diagrama de estados</h2>
-          <a class="btn link" href="automato.jff" download>Baixar automato.jff</a>
+          <div class="download-row">
+            <a class="btn link" href="automato.jff" download title="δ expandida para simular no JFLAP">
+              Baixar expandido
+            </a>
+            <a
+              class="btn link"
+              href="automato-parcial.jff"
+              download
+              title="Esquema parcial como neste diagrama (X ∈ Γ)"
+            >
+              Baixar parcial
+            </a>
+          </div>
         </div>
         <p class="note">
-          Aresta do último passo em destaque. Laços de lacres (q1–q4) na tabela e no JFLAP.
-          Aceitação por estado final (Final State; Z permanece na pilha).
+          Aresta do último passo em destaque. Laços de lacres (q1, qi, q2–q4) na tabela abaixo.
+          Aceitação por estado final (Final State; Z permanece na pilha). A válvula só abre em
+          <code>qi</code>. <strong>Expandido</strong> = todas as combinações de topo (JFLAP).
+          <strong>Parcial</strong> = mesmo esquema deste desenho (<code>X ∈ Γ</code> não expandido).
         </p>
 
         <svg
           id="diagrama"
           class="diagram"
-          viewBox="0 0 760 290"
+          viewBox="0 0 780 300"
           role="img"
-          aria-label="Autômato de pilha do Vigia-7: estados q0 a q5 e qR"
+          aria-label="Autômato de pilha do Vigia-7: estados q0, q1, qi, q2–q5"
         >
           <defs>
             <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
@@ -206,121 +221,132 @@
             </marker>
           </defs>
 
-          <line class="start" x1="14" y1="108" x2="46" y2="108" />
-          <text class="lbl" x="10" y="92">início</text>
+          <line class="start" x1="10" y1="88" x2="42" y2="88" />
+          <text class="lbl" x="8" y="72">início</text>
 
+          <!-- cadeia superior: descida pelos anéis -->
           <g class="edge" data-edge="q0>q1">
-            <path d="M104,108 H196" />
-            <text class="lbl" x="150" y="98" text-anchor="middle">a, Z / AZ</text>
+            <path d="M98,88 H176" />
+            <text class="lbl" x="137" y="78" text-anchor="middle">a, Z / AZ</text>
           </g>
           <g class="edge" data-edge="q1>q2">
-            <path d="M264,108 H356" />
-            <text class="lbl" x="310" y="98" text-anchor="middle">e, X / RX</text>
+            <path d="M238,88 H336" />
+            <text class="lbl" x="287" y="78" text-anchor="middle">e, X / RX</text>
           </g>
           <g class="edge" data-edge="q2>q3">
-            <path d="M424,108 H516" />
-            <text class="lbl" x="470" y="98" text-anchor="middle">e, X / RX</text>
+            <path d="M398,88 H496" />
+            <text class="lbl" x="447" y="78" text-anchor="middle">e, X / RX</text>
           </g>
           <g class="edge" data-edge="q3>q4">
-            <path d="M584,108 H656" />
-            <text class="lbl" x="620" y="98" text-anchor="middle">e, X / RX</text>
+            <path d="M558,88 H656" />
+            <text class="lbl" x="607" y="78" text-anchor="middle">e, X / RX</text>
           </g>
 
+          <!-- retornos s (arcos sob a fileira superior) -->
           <g class="edge" data-edge="q4>q3">
-            <path d="M706,142 C690,196 600,196 566,142" />
-            <text class="lbl" x="636" y="196" text-anchor="middle">s, R / ε</text>
+            <path d="M690,116 C678,158 560,158 530,116" />
+            <text class="lbl" x="610" y="152" text-anchor="middle">s, R / ε</text>
           </g>
           <g class="edge" data-edge="q3>q2">
-            <path d="M536,142 C520,196 440,196 406,142" />
-            <text class="lbl" x="472" y="196" text-anchor="middle">s, R / ε</text>
+            <path d="M530,116 C518,158 400,158 370,116" />
+            <text class="lbl" x="450" y="152" text-anchor="middle">s, R / ε</text>
           </g>
-          <g class="edge" data-edge="q2>q1">
-            <path d="M376,142 C360,196 280,196 246,142" />
-            <text class="lbl" x="312" y="196" text-anchor="middle">s, R / ε</text>
+
+          <!-- q2 → qi (selo libera a válvula): corredor à esquerda -->
+          <g class="edge" data-edge="q2>qi">
+            <path d="M342,110 C300,110 250,150 238,214" />
+            <text class="lbl" x="268" y="148" text-anchor="middle">s, R / ε</text>
           </g>
-          <g class="edge" data-edge="q1>q5">
-            <path d="M230,142 V198" />
-            <text class="lbl" x="222" y="176" text-anchor="end">n, Z / Z</text>
+          <!-- qi → q2 (nova inspeção): corredor à direita, sem cruzar -->
+          <g class="edge" data-edge="qi>q2">
+            <path d="M238,250 C290,290 350,200 370,116" />
+            <text class="lbl" x="330" y="248" text-anchor="middle">e, X / RX</text>
+          </g>
+          <g class="edge" data-edge="qi>q5">
+            <path d="M238,242 H386" />
+            <text class="lbl" x="312" y="234" text-anchor="middle">n, Z / Z</text>
           </g>
 
           <g class="node" data-state="q0">
-            <circle class="halo" cx="76" cy="108" r="38" />
-            <circle cx="76" cy="108" r="30" />
-            <text class="id" x="76" y="108" text-anchor="middle">q0</text>
-            <text class="nm" x="76" y="124" text-anchor="middle">Doca</text>
+            <circle class="halo" cx="70" cy="88" r="34" />
+            <circle cx="70" cy="88" r="26" />
+            <text class="id" x="70" y="88" text-anchor="middle">q0</text>
+            <text class="nm" x="70" y="104" text-anchor="middle">Doca</text>
           </g>
           <g class="node" data-state="q1">
-            <circle class="halo" cx="230" cy="108" r="38" />
-            <circle cx="230" cy="108" r="30" />
-            <text class="id" x="230" y="108" text-anchor="middle">q1</text>
-            <text class="nm" x="230" y="124" text-anchor="middle">Galeria</text>
+            <circle class="halo" cx="210" cy="88" r="34" />
+            <circle cx="210" cy="88" r="26" />
+            <text class="id" x="210" y="88" text-anchor="middle">q1</text>
+            <text class="nm" x="210" y="104" text-anchor="middle">Galeria</text>
           </g>
           <g class="node" data-state="q2">
-            <circle class="halo" cx="390" cy="108" r="38" />
-            <circle cx="390" cy="108" r="30" />
-            <text class="id" x="390" y="108" text-anchor="middle">q2</text>
-            <text class="nm" x="390" y="124" text-anchor="middle">Casa</text>
+            <circle class="halo" cx="370" cy="88" r="34" />
+            <circle cx="370" cy="88" r="26" />
+            <text class="id" x="370" y="88" text-anchor="middle">q2</text>
+            <text class="nm" x="370" y="104" text-anchor="middle">Casa</text>
           </g>
           <g class="node" data-state="q3">
-            <circle class="halo" cx="550" cy="108" r="38" />
-            <circle cx="550" cy="108" r="30" />
-            <text class="id" x="550" y="108" text-anchor="middle">q3</text>
-            <text class="nm" x="550" y="124" text-anchor="middle">Passadiço</text>
+            <circle class="halo" cx="530" cy="88" r="34" />
+            <circle cx="530" cy="88" r="26" />
+            <text class="id" x="530" y="88" text-anchor="middle">q3</text>
+            <text class="nm" x="530" y="104" text-anchor="middle">Passadiço</text>
           </g>
           <g class="node" data-state="q4">
-            <circle class="halo" cx="690" cy="108" r="38" />
-            <circle cx="690" cy="108" r="30" />
-            <text class="id" x="690" y="108" text-anchor="middle">q4</text>
-            <text class="nm" x="690" y="124" text-anchor="middle">Caldeira</text>
+            <circle class="halo" cx="690" cy="88" r="34" />
+            <circle cx="690" cy="88" r="26" />
+            <text class="id" x="690" y="88" text-anchor="middle">q4</text>
+            <text class="nm" x="690" y="104" text-anchor="middle">Caldeira</text>
+          </g>
+          <g class="node" data-state="qi">
+            <circle class="halo" cx="210" cy="242" r="34" />
+            <circle cx="210" cy="242" r="26" />
+            <text class="id" x="210" y="242" text-anchor="middle">qi</text>
+            <text class="nm" x="210" y="258" text-anchor="middle">Pronta</text>
           </g>
           <g class="node final" data-state="q5">
-            <circle class="halo" cx="230" cy="236" r="40" />
-            <circle cx="230" cy="236" r="30" />
-            <circle class="inner" cx="230" cy="236" r="24" />
-            <text class="id" x="230" y="236" text-anchor="middle">q5</text>
-            <text class="nm" x="230" y="252" text-anchor="middle">Núcleo</text>
-          </g>
-          <g class="node reject" data-state="qR">
-            <circle class="halo" cx="76" cy="236" r="38" />
-            <circle cx="76" cy="236" r="30" />
-            <text class="id" x="76" y="236" text-anchor="middle">qR</text>
-            <text class="nm" x="76" y="252" text-anchor="middle">Pane</text>
+            <circle class="halo" cx="420" cy="242" r="36" />
+            <circle cx="420" cy="242" r="26" />
+            <circle class="inner" cx="420" cy="242" r="20" />
+            <text class="id" x="420" y="242" text-anchor="middle">q5</text>
+            <text class="nm" x="420" y="258" text-anchor="middle">Núcleo</text>
           </g>
 
-          <text class="lbl dim" x="340" y="238">δ indefinida → qR</text>
-          <text class="lbl dim" x="340" y="258">cadeia rejeitada</text>
+          <text class="lbl dim" x="560" y="236">δ indefinida = erro</text>
+          <text class="lbl dim" x="560" y="254">(sem transição)</text>
+          <text class="lbl dim" x="560" y="272">n só em qi com topo Z</text>
         </svg>
 
-        <h3>Laços em q1–q4 <small>X ∈ Γ</small></h3>
+        <h3>Laços em q1, qi, q2–q4 <small>X ∈ Γ</small></h3>
         <div class="loops">
-          <div><code>a, X / AX</code><span>lacre quente</span></div>
-          <div><code>k, X / KX</code><span>lacre frio</span></div>
-          <div><code>b, A / ε</code><span>comporta quente</span></div>
-          <div><code>d, K / ε</code><span>comporta fria</span></div>
+          <div><code>a, X / AX</code><span>pegar cartucho quente</span></div>
+          <div><code>k, X / KX</code><span>pegar cartucho frio</span></div>
+          <div><code>b, A / ε</code><span>abrir comporta quente</span></div>
+          <div><code>d, K / ε</code><span>abrir comporta fria</span></div>
         </div>
       </div>
 
       <div class="box">
         <h2>Regras de transição</h2>
         <pre class="rules">M = (Q, Σ, Γ, δ, q0, Z, {q5})
-Q = {q0, q1, q2, q3, q4, q5, qR}
+Q = {q0, q1, qi, q2, q3, q4, q5}
 Σ = {a, k, b, d, e, s, n}
 Γ = {Z, A, K, R}          topo à esquerda, ε = só desempilha
 
 δ(q0, a, Z) = (q1, AZ)
-δ(q, a, X)  = (q, AX)     q ∈ {q1, q2, q3, q4}, X ∈ Γ
-δ(q, k, X)  = (q, KX)     q ∈ {q1, q2, q3, q4}, X ∈ Γ
-δ(q, b, A)  = (q, ε)      q ∈ {q1, q2, q3, q4}
-δ(q, d, K)  = (q, ε)      q ∈ {q1, q2, q3, q4}
+δ(q, a, X)  = (q, AX)     q ∈ {q1, qi, q2, q3, q4}, X ∈ Γ
+δ(q, k, X)  = (q, KX)     q ∈ {q1, qi, q2, q3, q4}, X ∈ Γ
+δ(q, b, A)  = (q, ε)      q ∈ {q1, qi, q2, q3, q4}
+δ(q, d, K)  = (q, ε)      q ∈ {q1, qi, q2, q3, q4}
 δ(q1, e, X) = (q2, RX)    X ∈ Γ
+δ(qi, e, X) = (q2, RX)    X ∈ Γ
 δ(q2, e, X) = (q3, RX)    X ∈ Γ
 δ(q3, e, X) = (q4, RX)    X ∈ Γ
 δ(q4, s, R) = (q3, ε)
 δ(q3, s, R) = (q2, ε)
-δ(q2, s, R) = (q1, ε)
-δ(q1, n, Z) = (q5, Z)
+δ(q2, s, R) = (qi, ε)     ← inspeção libera a válvula
+δ(qi, n, Z) = (q5, Z)
 
-Qualquer outra combinação é indefinida e leva a qR.
+Qualquer outra combinação é indefinida (δ = ∅): erro de transição, cadeia rejeitada.
 Aceita somente em q5, com a entrada esgotada.</pre>
       </div>
     </section>

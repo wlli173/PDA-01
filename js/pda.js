@@ -8,44 +8,77 @@
  * Topo da pilha: último elemento do array `stack`.
  * Cadeia escrita em δ (ex.: "AZ"): caractere à esquerda = topo.
  * Aceita por estado final q5 com a entrada esgotada. Z permanece no fundo.
+ *
+ * Fluxo de missão: doca (q0) → galeria (q1) → pelo menos um anel → retorno
+ * inspecionado (qi) → válvula n com topo Z → q5. Sem inspeção, n é indefinido.
  */
 (function (root) {
   "use strict";
 
   const ALPHABET = ["a", "k", "b", "d", "e", "s", "n"];
   const STACK_ALPHA = ["Z", "A", "K", "R"];
-  const LOOP_STATES = ["q1", "q2", "q3", "q4"];
+  /** Estados com laços de lacres/comportas (a/k/b/d). */
+  const LOOP_STATES = ["q1", "qi", "q2", "q3", "q4"];
+  /** Estados a partir dos quais se pode descer um anel (e). */
+  const ENTER_STATES = ["q1", "qi", "q2", "q3"];
 
   const STATE_INFO = {
     q0: { name: "Doca", place: "Doca de carga" },
-    q1: { name: "Galeria", place: "Galeria de contenção" },
+    q1: { name: "Galeria", place: "Galeria — inspeção pendente" },
+    qi: { name: "Pronta", place: "Galeria — anel selado, válvula liberada" },
     q2: { name: "Casa de máquinas", place: "Anel 1" },
     q3: { name: "Passadiço", place: "Anel 2" },
     q4: { name: "Caldeira", place: "Anel 3 — fundo" },
     q5: { name: "Núcleo", place: "Válvula aliviada" },
-    qR: { name: "Pane", place: "Servos travados" },
   };
 
+  /** Descrição voltada à ação no mapa (não só o símbolo formal). */
   const SYMBOL_INFO = {
-    a: "lacre quente — empilha A (abre a porta da doca e alimenta b)",
-    k: "lacre frio — empilha K (alimenta d)",
-    b: "comporta quente — exige A no topo",
-    d: "comporta fria — exige K no topo",
-    e: "entrar no anel — empilha R",
-    s: "selar o anel — exige R no topo",
-    n: "válvula na galeria — exige q1 e topo Z → q5",
+    a: "pegar cartucho quente — empilha A (abre a porta da doca; alimenta b)",
+    k: "pegar cartucho frio — empilha K (alimenta d)",
+    b: "abrir comporta quente — gasta A do topo (só se topo for A)",
+    d: "abrir comporta fria — gasta K do topo (só se topo for K)",
+    e: "descer ao anel — empilha R (marca o nível)",
+    s: "selar o anel e subir — exige R no topo (limpe lacres acima)",
+    n: "girar a válvula — só em qi com topo Z → q5",
+  };
+
+  /** Rótulo curto no mapa: a ação, não só a letra. */
+  const SYMBOL_ACTION = {
+    a: "PEGAR",
+    k: "PEGAR",
+    b: "ABRIR",
+    d: "ABRIR",
+    e: "DESCER",
+    s: "SELAR",
+    n: "GIRAR",
   };
 
   const EXAMPLES = [
-    { input: "abn", label: "a b n", expect: "aceita", blurb: "Doca → comporta → válvula" },
-    { input: "akdbn", label: "a k d b n", expect: "aceita", blurb: "Dois lacres, ordem LIFO" },
+    {
+      input: "abesn",
+      label: "a b e s n",
+      expect: "aceita",
+      blurb: "Inspeciona 1 anel e gira a válvula",
+    },
+    {
+      input: "akdbesn",
+      label: "a k d b e s n",
+      expect: "aceita",
+      blurb: "LIFO de lacres + inspeção",
+    },
     {
       input: "abeekdsabsn",
       label: "a b e e k d s a b s n",
       expect: "aceita",
-      blurb: "Dois anéis e retorno à válvula",
+      blurb: "Dois anéis, LIFO e retorno",
     },
-    { input: "abeasn", label: "a b e a s n", expect: "rejeita", blurb: "Lacre acima de R ao selar" },
+    {
+      input: "abn",
+      label: "a b n",
+      expect: "rejeita",
+      blurb: "Válvula sem inspeção (falta e/s)",
+    },
   ];
 
   let transitionTable = null;
@@ -63,16 +96,18 @@
       list.push({ from: q, to: q, read: "d", pop: "K", push: "" });
     }
 
-    for (const top of STACK_ALPHA) {
-      list.push({ from: "q1", to: "q2", read: "e", pop: top, push: "R" + top });
-      list.push({ from: "q2", to: "q3", read: "e", pop: top, push: "R" + top });
-      list.push({ from: "q3", to: "q4", read: "e", pop: top, push: "R" + top });
+    for (const from of ENTER_STATES) {
+      const to = from === "q1" || from === "qi" ? "q2" : from === "q2" ? "q3" : "q4";
+      for (const top of STACK_ALPHA) {
+        list.push({ from: from, to: to, read: "e", pop: top, push: "R" + top });
+      }
     }
 
     list.push({ from: "q4", to: "q3", read: "s", pop: "R", push: "" });
     list.push({ from: "q3", to: "q2", read: "s", pop: "R", push: "" });
-    list.push({ from: "q2", to: "q1", read: "s", pop: "R", push: "" });
-    list.push({ from: "q1", to: "q5", read: "n", pop: "Z", push: "Z" });
+    // Selar o anel 1 libera a válvula: chega em qi (não em q1).
+    list.push({ from: "q2", to: "qi", read: "s", pop: "R", push: "" });
+    list.push({ from: "qi", to: "q5", read: "n", pop: "Z", push: "Z" });
     return list;
   }
 
@@ -123,8 +158,8 @@
     const roteiro = config.roteiro + symbol;
 
     if (!rule) {
+      // δ indefinida: não há transição — permanece no estado atual e marca erro.
       const next = Object.assign({}, config, {
-        state: "qR",
         stack: config.stack.slice(),
         roteiro,
         symbol,
@@ -139,7 +174,7 @@
         ok: false,
         ignored: false,
         from: config.state,
-        to: "qR",
+        to: null,
         symbol,
         top,
         pop: top,
@@ -200,7 +235,6 @@
       stack: config.stack.slice(),
       roteiro: config.roteiro + symbol,
       symbol,
-      state: "qR",
       rejected: true,
       accepted: false,
       halted: true,
@@ -240,7 +274,9 @@
   function formatDelta(step) {
     if (!step || step.ignored) return "";
     const top = step.top == null ? "∅" : step.top;
-    if (!step.ok) return "δ(" + step.from + ", " + step.symbol + ", " + top + ") = ∅  →  qR";
+    if (!step.ok) {
+      return "δ(" + step.from + ", " + step.symbol + ", " + top + ") = ∅  · erro (sem transição)";
+    }
     const push = step.push === "" ? "ε" : step.push;
     return "δ(" + step.from + ", " + step.symbol + ", " + step.pop + ") = (" + step.to + ", " + push + ")";
   }
@@ -267,14 +303,125 @@
     return "REJEITADA — falhou na posição " + ((config.failIndex || 0) + 1) + " (" + config.symbol + ")";
   }
 
+  /**
+   * Texto de fim de missão para o banner do canvas (aceita / rejeita).
+   * Foca na ação narrativa, não só no veredito formal.
+   */
+  function endingInfo(config, lastStep) {
+    if (!config || !config.halted) return null;
+
+    if (config.accepted) {
+      return {
+        kind: "accept",
+        title: "CALDEIRA ALIVIADA",
+        subtitle: "Inspeção ok · válvula liberada · q5",
+      };
+    }
+
+    if (config.reason === "not-final") {
+      return {
+        kind: "reject",
+        title: "MISSÃO INCOMPLETA",
+        subtitle: "Entrada acabou em " + config.state + " — falta girar n em qi",
+      };
+    }
+
+    if (config.reason === "invalid-symbol") {
+      return {
+        kind: "reject",
+        title: "SÍMBOLO INVÁLIDO",
+        subtitle: "'" + config.symbol + "' fora de Σ",
+      };
+    }
+
+    if (lastStep && !lastStep.ok) {
+      const top = lastStep.top == null ? "∅" : lastStep.top;
+      const sym = lastStep.symbol;
+      if (sym === "b" && top === "K") {
+        return {
+          kind: "reject",
+          title: "COMPORTA ERRADA",
+          subtitle: "Topo K — use a comporta fria (d)",
+        };
+      }
+      if (sym === "d" && top === "A") {
+        return {
+          kind: "reject",
+          title: "COMPORTA ERRADA",
+          subtitle: "Topo A — use a comporta quente (b)",
+        };
+      }
+      if (sym === "b" || sym === "d") {
+        return {
+          kind: "reject",
+          title: "SEM LACRE NO TOPO",
+          subtitle: "Abertura exige " + (sym === "b" ? "A" : "K") + " no topo (agora " + top + ")",
+        };
+      }
+      if (sym === "s" && top !== "R") {
+        return {
+          kind: "reject",
+          title: "ANEL BLOQUEADO",
+          subtitle: "Há " + top + " acima de R — gaste o lacre antes de selar",
+        };
+      }
+      if (sym === "n") {
+        if (lastStep.from === "q1") {
+          return {
+            kind: "reject",
+            title: "VÁLVULA TRAVADA",
+            subtitle: "Desça (e), sele o anel (s) e volte — só então gire n",
+          };
+        }
+        if (top !== "Z") {
+          return {
+            kind: "reject",
+            title: "PILHA NÃO ZERADA",
+            subtitle: "Topo " + top + " — feche anéis e gaste lacres antes de n",
+          };
+        }
+        return {
+          kind: "reject",
+          title: "VÁLVULA FORA DE LUGAR",
+          subtitle: "n só em qi (galeria inspecionada) com topo Z",
+        };
+      }
+      if (sym === "e" && lastStep.from === "q4") {
+        return {
+          kind: "reject",
+          title: "FUNDO DA CALDEIRA",
+          subtitle: "Não há anel abaixo — sele (s) para subir",
+        };
+      }
+      if (sym === "a" && lastStep.from === "q0" && top !== "Z") {
+        return {
+          kind: "reject",
+          title: "DOCA TRAVADA",
+          subtitle: "Na doca só o primeiro cartucho quente abre a porta",
+        };
+      }
+      return {
+        kind: "reject",
+        title: "ERRO DE TRANSIÇÃO",
+        subtitle: "δ(" + lastStep.from + ", " + sym + ", " + top + ") indefinida",
+      };
+    }
+
+    return {
+      kind: "reject",
+      title: "ERRO DE TRANSIÇÃO",
+      subtitle: "Nenhuma transição prevista para essa entrada",
+    };
+  }
+
   const MOVE_HINT = {
-    a: "lacre quente",
-    k: "lacre frio",
-    b: "comporta quente",
-    d: "comporta fria",
-    e: "entrar no anel",
-    s: "selar o anel",
-    n: "válvula → q5",
+    a: "pegar cartucho quente",
+    k: "pegar cartucho frio",
+    b: "abrir comporta quente",
+    d: "abrir comporta fria",
+    e: "descer ao anel",
+    s: "selar e subir",
+    n: "girar válvula → q5",
   };
 
   /** Símbolos com transição definida no estado/topo atuais (ordem do alfabeto). */
@@ -311,47 +458,22 @@
     return out;
   }
 
-  /** Dica objetiva: o que fazer agora em relação à meta (válvula na galeria). */
+  /** Dica objetiva: o que fazer agora em relação à meta (válvula após inspeção). */
   function coachTip(config, lastStep) {
     if (!config) return { title: "—", body: "Aguardando entrada." };
 
     if (config.accepted) {
       return {
         title: "MISSÃO CUMPRIDA",
-        body: "Válvula acionada. Cadeia aceita em q5; pilha em Z.",
+        body: "Caldeira aliviada. Cadeia aceita em q5; pilha em Z.",
       };
     }
 
     if (config.rejected) {
-      if (config.reason === "not-final") {
-        return {
-          title: "REJEITADA",
-          body:
-            "Entrada esgotada em " +
-            config.state +
-            ". A meta exige n na galeria (q1) com topo Z.",
-        };
-      }
-      if (lastStep && !lastStep.ok) {
-        const top = lastStep.top == null ? "∅" : lastStep.top;
-        let why =
-          "δ(" + lastStep.from + ", " + lastStep.symbol + ", " + top + ") indefinida.";
-        if (lastStep.symbol === "b" && top === "K") {
-          why += " Topo é K: use d antes de b.";
-        } else if (lastStep.symbol === "d" && top === "A") {
-          why += " Topo é A: use b antes de d.";
-        } else if (lastStep.symbol === "s" && top !== "R") {
-          why += " Selar exige R no topo; use o lacre que está acima.";
-        } else if (lastStep.symbol === "n" && (lastStep.from !== "q1" || top !== "Z")) {
-          why += " Válvula só na galeria com topo Z (feche anéis e gaste lacres).";
-        } else if (lastStep.symbol === "e" && lastStep.from === "q4") {
-          why += " Caldeira é o anel mais fundo; não há e. Selecione s para subir.";
-        }
-        return { title: "REJEITADA", body: why + " Reinicie (R)." };
-      }
+      const end = endingInfo(config, lastStep);
       return {
-        title: "REJEITADA",
-        body: "Transição inválida. Reinicie (R) e confira o topo da pilha.",
+        title: end ? end.title : "REJEITADA",
+        body: (end ? end.subtitle + ". " : "") + "Reinicie (R).",
       };
     }
 
@@ -365,7 +487,7 @@
     if (config.state === "q0") {
       return {
         title: "DOCA",
-        body: "Colete o lacre quente (a). Ele abre a porta e leva à galeria — caminho da válvula.",
+        body: "Pegue o cartucho quente (a). Ele abre a porta e leva à galeria.",
       };
     }
 
@@ -376,55 +498,100 @@
       };
     }
 
+    if (config.state === "q1") {
+      if (top === "Z") {
+        return {
+          title: "INSPEÇÃO PENDENTE",
+          body:
+            "A válvula ainda está travada. Desça (e), sele o anel (s) e volte — aí gire n. Ações: " +
+            lista +
+            ".",
+        };
+      }
+      if (top === "K") {
+        return {
+          title: "GALERIA · TOPO K",
+          body: "Abra a comporta fria (d) antes de descer, ou empilhe outro lacre. Ações: " + lista + ".",
+        };
+      }
+      if (top === "A") {
+        return {
+          title: "GALERIA · TOPO A",
+          body:
+            "Abra a comporta quente (b) ou desça (e) com o lacre. Meta: inspecionar um anel. Ações: " +
+            lista +
+            ".",
+        };
+      }
+      return {
+        title: "GALERIA",
+        body: "Desça ao anel (e) para inspecionar. Ações: " + lista + ".",
+      };
+    }
+
+    if (config.state === "qi") {
+      if (top === "Z" && symbols.indexOf("n") !== -1) {
+        return {
+          title: "VÁLVULA LIBERADA",
+          body: "Inspeção ok e pilha em Z. Gire n para aliviar a caldeira.",
+        };
+      }
+      if (top === "K") {
+        return {
+          title: "PRONTA · TOPO K",
+          body: "Gaste K com d antes de girar n. Ações: " + lista + ".",
+        };
+      }
+      if (top === "A") {
+        return {
+          title: "PRONTA · TOPO A",
+          body: "Gaste A com b (ou desça de novo) antes de n. Ações: " + lista + ".",
+        };
+      }
+      if (top === "R") {
+        return {
+          title: "PRONTA · TOPO R",
+          body: "Ainda há anel aberto? Selar só funciona nos anéis. Limpe a pilha até Z.",
+        };
+      }
+      return {
+        title: "PRONTA",
+        body: "Meta: topo Z e girar n. Ações: " + lista + ".",
+      };
+    }
+
     if (top === "K" && symbols.indexOf("d") !== -1) {
       return {
         title: "TOPO K",
-        body: "Lacre frio no topo. Abra a comporta fria (d) antes de usar b. Ações: " + lista + ".",
+        body: "Cartucho frio no topo. Abra a comporta fria (d) antes de b. Ações: " + lista + ".",
       };
     }
 
-    if (top === "A" && symbols.indexOf("b") !== -1 && config.state === "q1") {
-      return {
-        title: "GALERIA · TOPO A",
-        body:
-          "Abra a comporta quente (b), explore um anel (e) ou prepare a válvula. Meta: topo Z e n.",
-      };
-    }
-
-    if (top === "A" && symbols.indexOf("s") === -1 && config.state !== "q1") {
+    if (top === "A" && symbols.indexOf("s") === -1 && config.state !== "qi") {
       return {
         title: "ANEL · TOPO A",
-        body:
-          "Lacre acima do retorno. Use b (ou o lacre do topo) antes de s. Ações: " + lista + ".",
+        body: "Lacre acima do retorno. Use b antes de selar (s). Ações: " + lista + ".",
       };
     }
 
     if (top === "A") {
       return {
         title: "TOPO A",
-        body: "Use b na comporta quente, ou empilhe outro lacre/anel. Ações: " + lista + ".",
+        body: "Abra a comporta quente (b), ou empilhe outro lacre/anel. Ações: " + lista + ".",
       };
     }
 
     if (top === "R") {
       return {
         title: "TOPO R",
-        body:
-          "Selar (s) sobe um anel. A válvula (n) só funciona depois de todos os R saírem e você voltar à galeria.",
-      };
-    }
-
-    if (top === "Z" && config.state === "q1") {
-      return {
-        title: "VÁLVULA PRONTA",
-        body: "Galeria com pilha em Z. Acione n para concluir, ou continue com a/k/e.",
+        body: "Selar (s) sobe um nível. Só depois de todos os R saírem a válvula libera.",
       };
     }
 
     if (config.state === "q4") {
       return {
         title: "CALDEIRA",
-        body: "Anel mais fundo. Gaste lacres do topo e sele (s) para subir. Ações: " + lista + ".",
+        body: "Fundo. Gaste lacres do topo e sele (s) para subir. Ações: " + lista + ".",
       };
     }
 
@@ -432,15 +599,13 @@
       return {
         title: (config.state === "q2" ? "CASA DE MÁQUINAS" : "PASSADIÇO") + " · TOPO " + top,
         body:
-          "Desça (e), colete/use lacres ou sele (s) para voltar à galeria e à válvula. Ações: " +
-          lista +
-          ".",
+          "Desça (e), use lacres nas comportas ou sele (s) para voltar. Ações: " + lista + ".",
       };
     }
 
     return {
       title: config.state + " · TOPO " + top,
-      body: "Meta: válvula na galeria com topo Z (n). Ações: " + lista + ".",
+      body: "Meta: inspecionar anel, voltar a qi com topo Z e girar n. Ações: " + lista + ".",
     };
   }
 
@@ -448,8 +613,10 @@
     ALPHABET,
     STACK_ALPHA,
     LOOP_STATES,
+    ENTER_STATES,
     STATE_INFO,
     SYMBOL_INFO,
+    SYMBOL_ACTION,
     EXAMPLES,
     MOVE_HINT,
     definedTransitions,
@@ -463,6 +630,7 @@
     formatDelta,
     describeStep,
     verdictText,
+    endingInfo,
     legalMoves,
     coachTip,
   };

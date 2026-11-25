@@ -89,22 +89,36 @@ test("todo evento de cada sala é alcançável a partir da entrada", () => {
   }
 });
 
-test("passeio mínimo pelo mapa gera a cadeia aceita abn", () => {
-  const path = [];
-  for (let x = 6; x <= 18; x += 1) path.push({ x, y: 4 });
-  path.push({ x: 18, y: 3 });
-  for (let y = 4; y <= 10; y += 1) path.push({ x: 18, y });
-  for (const p of path) assert.ok(walkable(p.x, p.y, true), "bloqueado em " + p.x + "," + p.y);
-  const symbols = path.filter((p) => world.events.has(p.x + "," + p.y)).map((p) => world.events.get(p.x + "," + p.y).symbol);
-  assert.equal(symbols.join(""), "abn");
+test("passeio mínimo pelo mapa gera a cadeia aceita abesn", () => {
+  // a(doca) → b(galeria) → e → s(anel1) → n
+  const path = [
+    { x: 6, y: 4 }, // a
+    { x: 14, y: 3 }, // b
+    { x: 13, y: 10 }, // e → ring1
+    { x: 18, y: 20 }, // s → gallery
+    { x: 18, y: 10 }, // n
+  ];
+  for (const p of path) {
+    assert.ok(walkable(p.x, p.y, true), "bloqueado em " + p.x + "," + p.y);
+    assert.ok(world.events.has(p.x + "," + p.y), "sem evento em " + p.x + "," + p.y);
+  }
+  const symbols = path.map((p) => world.events.get(p.x + "," + p.y).symbol);
+  assert.equal(symbols.join(""), "abesn");
   assert.equal(PDA.runString(symbols.join("")).config.accepted, true);
 });
 
-test("há lacres suficientes por sala para os exemplos do trabalho", () => {
-  const count = (symbol, pred) => [...world.events.values()].filter((e) => e.symbol === symbol && pred(e)).length;
-  assert.ok(count("a", (e) => e.y <= 12) >= 3, "quentes na galeria");
-  assert.ok(count("k", (e) => e.y <= 12) >= 2, "frios na galeria");
+test("há lacres e pares de ação por sala", () => {
+  const count = (symbol, pred) =>
+    [...world.events.values()].filter((e) => e.symbol === symbol && pred(e)).length;
+  // doca + galeria: pelo menos um cartucho quente e um frio no andar superior
+  assert.ok(count("a", (e) => e.y <= 12) >= 2, "quentes (doca+galeria)");
+  assert.ok(count("k", (e) => e.y <= 12) >= 1, "frios na galeria");
+  assert.ok(count("b", (e) => e.y <= 12) >= 1, "comporta quente na galeria");
+  assert.ok(count("d", (e) => e.y <= 12) >= 1, "comporta fria na galeria");
+  assert.ok(count("e", (e) => e.y <= 12) === 1, "poço de descida");
+  assert.ok(count("n", (e) => e.y <= 12) === 1, "válvula");
   assert.ok(count("k", (e) => e.y >= 15 && e.y <= 22) >= 1);
+  assert.ok(count("s", (e) => e.y >= 15 && e.y <= 22) === 1, "prensa no anel 1");
 });
 
 console.log("\n" + passed + " testes passaram");

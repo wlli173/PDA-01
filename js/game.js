@@ -26,13 +26,13 @@
   const WARM32 = ((Math.round(0.13 * 255) << 24) | (60 << 16) | (170 << 8) | 255) >>> 0;
 
   const PULSE = {
-    a: { text: "+A", color: "#ff8a3d" },
-    k: { text: "+K", color: "#6fd8f0" },
-    b: { text: "-A", color: "#ffb08a" },
-    d: { text: "-K", color: "#9fe6f7" },
-    e: { text: "+R", color: "#e6d3b0" },
-    s: { text: "-R", color: "#9ae6bc" },
-    n: { text: "OK", color: "#f2c75c" },
+    a: { text: "PEGAR A", color: "#ff8a3d" },
+    k: { text: "PEGAR K", color: "#6fd8f0" },
+    b: { text: "ABRIR -A", color: "#ffb08a" },
+    d: { text: "ABRIR -K", color: "#9fe6f7" },
+    e: { text: "DESCER +R", color: "#e6d3b0" },
+    s: { text: "SELAR -R", color: "#9ae6bc" },
+    n: { text: "GIRAR!", color: "#f2c75c" },
   };
 
   function create(canvas, hooks) {
@@ -364,12 +364,18 @@
       text(line3, 10, 34, "#cbbba6", "left", 8);
     }
 
-    function banner(label, color, big) {
-      g.fillStyle = "rgba(8,6,5,0.88)";
-      g.fillRect(0, VIEW_H - 30, VIEW_W, 30);
+    function banner(label, color, big, subtitle) {
+      const h = subtitle ? 42 : 30;
+      g.fillStyle = "rgba(8,6,5,0.9)";
+      g.fillRect(0, VIEW_H - h, VIEW_W, h);
       g.fillStyle = color;
-      g.fillRect(0, VIEW_H - 30, VIEW_W, 2);
-      text(label, VIEW_W / 2, VIEW_H - (big ? 22 : 18), color, "center", big ? 16 : 8);
+      g.fillRect(0, VIEW_H - h, VIEW_W, 2);
+      if (subtitle) {
+        text(label, VIEW_W / 2, VIEW_H - 34, color, "center", big ? 12 : 8);
+        text(subtitle, VIEW_W / 2, VIEW_H - 16, "#cbbba6", "center", 8);
+      } else {
+        text(label, VIEW_W / 2, VIEW_H - (big ? 22 : 18), color, "center", big ? 16 : 8);
+      }
     }
 
     function frame(now) {
@@ -396,9 +402,10 @@
       if (fade > 0) fade = Math.max(0, fade - dt * 3);
 
       if (presentation.accepted && now > nextSparkle) {
-        nextSparkle = now + 90;
+        nextSparkle = now + 70;
         const a = Math.random() * Math.PI * 2;
-        burst(player.vx + T / 2 + Math.cos(a) * 18, player.vy + Math.sin(a) * 14, "#f2c75c", 3);
+        burst(player.vx + T / 2 + Math.cos(a) * 22, player.vy + Math.sin(a) * 16, "#f2c75c", 4);
+        burst(player.vx + T / 2, player.vy - 4, "#9be7b8", 2);
       }
 
       let camX = Math.round(player.vx + T / 2 - VIEW_W / 2);
@@ -454,26 +461,49 @@
         }
       });
 
-      // etiquetas dos símbolos (ficam acima de tudo, mas sob a escuridão)
+      // etiquetas: letra formal + verbo da ação
+      const actionMap = root.VigiaPDA && root.VigiaPDA.SYMBOL_ACTION;
       events.forEach(function (ev) {
         const sx = ev.x * T - camX;
         const sy = ev.y * T - camY;
-        if (onScreen(sx, sy, T * 2)) Art.drawTag(g, ev.symbol, sx, sy - 1);
+        if (onScreen(sx, sy, T * 2)) Art.drawTag(g, ev.symbol, sx, sy - 1, actionMap);
       });
 
       composeLight(buildLights(camX, camY, now, presentation), fade * 0.9);
 
       if (presentation.rejected) {
-        g.fillStyle = "rgba(120,20,10,0.22)";
+        g.fillStyle = "rgba(120,20,10,0.28)";
+        g.fillRect(0, 0, VIEW_W, VIEW_H);
+        if (Math.floor(now / 90) % 2 === 0) {
+          g.fillStyle = "rgba(255,80,40,0.08)";
+          g.fillRect(0, 0, VIEW_W, VIEW_H);
+        }
+      } else if (presentation.accepted) {
+        g.fillStyle = "rgba(40,120,70,0.12)";
         g.fillRect(0, 0, VIEW_W, VIEW_H);
       }
 
       drawEffects(camX, camY, now);
       drawChip(presentation);
 
-      if (presentation.rejected) banner("REJEITADA", "#ff6a4a", true);
-      else if (presentation.accepted) banner("ACEITA", "#9be7b8", true);
-      else if (presentation.simulating) banner("SIMULANDO ROTEIRO", "#ffb703", false);
+      const end = presentation.ending;
+      if (presentation.rejected) {
+        banner(
+          end && end.title ? end.title : "REJEITADA",
+          "#ff6a4a",
+          true,
+          end && end.subtitle ? end.subtitle : "Servos travados · R para reiniciar",
+        );
+      } else if (presentation.accepted) {
+        banner(
+          end && end.title ? end.title : "CALDEIRA ALIVIADA",
+          "#9be7b8",
+          true,
+          end && end.subtitle ? end.subtitle : "Cadeia aceita em q5",
+        );
+      } else if (presentation.simulating) {
+        banner("SIMULANDO ROTEIRO", "#ffb703", false);
+      }
 
       root.requestAnimationFrame(frame);
     }

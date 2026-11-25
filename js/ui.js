@@ -123,6 +123,7 @@
         accepted: config.accepted,
         rejected: config.rejected,
         chip: chipInfo(),
+        ending: config.halted ? PDA.endingInfo(config, lastStep) : null,
       };
     },
   });
@@ -156,6 +157,8 @@
       if (!config.roteiro) return "ainda sem símbolos";
       return "topo " + (PDA.topOf(config) || "∅");
     }
+    const end = PDA.endingInfo(config, lastStep);
+    if (end && end.subtitle) return end.subtitle;
     if (config.accepted) return "válvula acionada · q5";
     if (config.reason === "not-final") {
       return "entrada esgotada em " + config.state;
@@ -163,7 +166,7 @@
     if (config.reason === "invalid-symbol") {
       return "símbolo inválido: " + config.symbol;
     }
-    return "transição indefinida · qR";
+    return "δ indefinida — sem transição prevista";
   }
 
   function renderStack() {
@@ -358,7 +361,7 @@
         config = PDA.rejectInvalid(config, symbol, index - 1);
         lastStep = null;
         mode = "ended";
-        game.focusState("qR");
+        game.focusState(config.state);
         render();
         return;
       }
